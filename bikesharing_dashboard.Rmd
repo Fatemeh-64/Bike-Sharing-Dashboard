@@ -1,0 +1,403 @@
+---
+title: "Bike Sharing Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+runtime: shiny
+---
+
+
+
+```{r setup, include=FALSE}
+# data_processing.R
+# ---------------------------------------
+# Bike Sharing Data Preparation Script
+# ---------------------------------------
+
+
+library(shiny)
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(DT)
+library(lubridate)
+library(scales)
+library(dygraphs)
+library(xts)
+library(ggplot2)
+library(tidyr)
+
+# Load dataset
+
+data <- read.csv("day.csv")
+
+# Convert date
+
+data$dteday <- as.Date(data$dteday)
+
+# Convert categorical variables
+
+data$season <- factor(data$season,
+                      levels = c(1,2,3,4),
+                      labels = c("Winter","Spring","Summer","Fall")
+                      )
+
+data$weathersit <- factor(data$weathersit,
+                          levels = c(1,2,3),
+                          labels = c("Clear","Mist","Rain")
+                          )
+
+# Create new variables
+data$year <- year(data$dteday)
+data$month <- month(data$dteday, label = TRUE, abbr = FALSE)
+data$month <- factor(
+  data$month,
+  levels = c(
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  )
+)
+
+data$weekday <- wday(data$dteday, label = TRUE)
+
+# ---------------------------------------
+# Global chunk options for better plot sizing
+# ---------------------------------------
+knitr::opts_chunk$set(
+  fig.width = 10,
+  fig.height = 5,
+  out.width = "100%"
+)
+```
+
+# Data Table
+
+### **Overview**
+This dashboard analyzes daily bike rental data to understand usage patterns across seasons, time, and weather conditions. 
+The goal is to identify trends in demand and provide insights into when bike rentals are highest, helping support operational and planning decisions.
+The dataset is from the UCI Machine Learning Repository – Bike Sharing Dataset. It contains 731 daily records with variables such as season, temperature, weather, and total rental counts.
+
+## Data Table
+
+```{r}
+# ---------------------------------------
+# Show interactive data table
+# Includes pagination, search, and filters
+# ---------------------------------------
+renderDT({
+  datatable(
+    data,
+    options = list(
+      pageLength = 10,
+      scrollX = TRUE
+    ),
+    filter = "top",
+    rownames = FALSE
+  )
+})
+
+```
+
+# Key Metrics
+
+### Gauges and Value Boxes
+```{r}
+# ---------------------------------------
+# User input to filter by season
+# ---------------------------------------
+selectInput(
+  "season_input",
+  "Select Season:",
+  choices = c("All", levels(data$season))
+)
+```
+
+```{r}
+# ---------------------------------------
+# Reactive filtered dataset based on season
+# ---------------------------------------
+filtered_data <- reactive({
+  if (input$season_input == "All") {
+    data
+  } else {
+    data %>% filter(season == input$season_input)
+  }
+})
+```
+
+## Row
+
+### Average Rentals
+```{r}
+# ---------------------------------------
+# Gauge for average rentals
+# ---------------------------------------
+renderGauge({
+  avg_val <- mean(filtered_data()$cnt)
+
+  gauge(
+    value = avg_val,
+    min = 0,
+    max = max(data$cnt),
+    label = "Average Rentals",
+    sectors = gaugeSectors(
+      success = c(0.7 * max(data$cnt), max(data$cnt)),
+      warning = c(0.4 * max(data$cnt), 0.7 * max(data$cnt)),
+      danger = c(0, 0.4 * max(data$cnt))
+    )
+  )
+})
+```
+Average rentals give a baseline for daily bike demand. When filtered by season, it shows how bike demand changes throughout the year. Summer has the highest average demand due to favorable weather and increased outdoor activities.
+
+### Maximum Rentals
+```{r}
+# ---------------------------------------
+# Gauge for maximum rentals
+# ---------------------------------------
+renderGauge({
+  max_val <- max(filtered_data()$cnt)
+
+  gauge(
+    value = max_val,
+    min = 0,
+    max = max(data$cnt),
+    label = "Maximum Rentals",
+    sectors = gaugeSectors(
+      success = c(0.7 * max(data$cnt), max(data$cnt)),
+      warning = c(0.4 * max(data$cnt), 0.7 * max(data$cnt)),
+      danger = c(0, 0.4 * max(data$cnt))
+    )
+  )
+})
+```
+
+This shows the maximum rentals per season or for the whole year. It reflects that higher demand can be linked to good weather, seasonal effects and social events. It is important for companies to plan accordingly to balance demand with supply .
+
+## Row
+
+
+### Total Rentals
+```{r}
+# ---------------------------------------
+# Value box for total rentals
+# ---------------------------------------
+renderValueBox({
+  total_val <- sum(filtered_data()$cnt)
+  max_total <- sum(data$cnt)
+
+  color_box <- if (total_val >= 0.7 * max_total) {
+    "success"
+  } else if (total_val >= 0.4 * max_total) {
+    "warning"
+  } else {
+    "danger"
+  }
+
+  valueBox(
+    value = comma(total_val),
+    caption = "Total Rentals",
+    icon = "fa-bicycle",
+    color = color_box
+  )
+})
+```
+
+### Average Rentals per Day
+```{r}
+# ---------------------------------------
+# Value box for average rentals per day
+# ---------------------------------------
+renderValueBox({
+  avg_val <- mean(filtered_data()$cnt)
+  max_avg <- max(data$cnt)
+
+  color_box <- if (avg_val >= 0.7 * max_avg) {
+    "success"
+  } else if (avg_val >= 0.4 * max_avg) {
+    "warning"
+  } else {
+    "danger"
+  }
+
+  valueBox(
+    value = round(avg_val, 0),
+    caption = "Average Rentals per Day",
+    icon = "fa-chart-line",
+    color = color_box
+  )
+})
+```
+
+
+Row
+--------
+
+### 
+This value shows the total rental volume contributed by the selected season or the full dataset.
+
+### 
+This value summarizes the typical daily demand level. Differences across seasons suggest that bike usage is strongly influenced by weather and time of year.
+
+# Interactive Visualizations
+
+## Row{data-height=400}
+
+### Rentals Over Time {data-width=70}
+```{r}
+# ---------------------------------------
+# Create time series object for dygraph
+# ---------------------------------------
+ts_data <- xts(data$cnt, order.by = data$dteday)
+
+# ---------------------------------------
+# Interactive time series plot
+# ---------------------------------------
+dygraph(ts_data, main = "Bike Rentals Over Time") %>%
+  dyAxis("x", label = "Date") %>%
+  dyAxis("y", label = "Number of Rentals") %>%
+  dyRangeSelector() %>%
+  dyOptions(fillGraph = TRUE)
+```
+### Insight {data-width=30} 
+The time series plot shows increasing rentals during warmer months and declining numbers in colder periods. The zoom-in feature reveals short-term fluctuations and indicates the effects of sudden weather changes on bike demand.
+
+## Row{data-height=400}
+
+### Average Rentals by Season {data-width=70}
+```{r}
+# ---------------------------------------
+# Summarize average rentals by season
+# ---------------------------------------
+season_data <- data %>%
+  group_by(season) %>%
+  summarise(avg_rentals = mean(cnt), .groups = "drop")
+
+# ---------------------------------------
+# Interactive bar chart
+# ---------------------------------------
+p_bar <- ggplot(season_data, aes(x = season, y = avg_rentals, fill = season)) +
+  geom_col() +
+  labs(
+    title = "Average Rentals by Season",
+    x = "Season",
+    y = "Average Rentals"
+  ) +
+  theme_minimal() +
+  guides(fill = "none")
+
+ggplotly(p_bar, tooltip = c("x", "y"))
+```
+### Insight {data-width=30}
+Average rentals are highest in Summer and Spring, highlighting the strong effect of favorable weather conditions on bike usage. Winter shows a significant drop, indicating that demand is highly seasonal and inconsistent throughout the year.
+
+## Row{data-height=400}
+
+### Monthly Trend of Bike Rentals {data-width=70}
+```{r}
+# ---------------------------------------
+# Summarize average rentals by month
+# ---------------------------------------
+monthly_data <- data %>%
+  group_by(month) %>%
+  summarise(avg_rentals = mean(cnt), .groups = "drop")
+
+# ---------------------------------------
+# Interactive line chart
+# ---------------------------------------
+p_line <- ggplot(monthly_data, aes(x = month, y = avg_rentals, group = 1)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(
+    title = "Monthly Trend of Bike Rentals",
+    x = "Month",
+    y = "Average Rentals"
+  ) +
+  theme_minimal()
+
+ggplotly(p_line, tooltip = c("x", "y"))
+```
+### Insight {data-width=30}
+Bike Rentals gradually rise from the initial months, peak during mid-year and decline towards the end of the year. This confirms the relationship between temperature and bike usage.
+
+# Storyboard {.storyboard}
+
+## Histogram
+
+```{r}
+# ---------------------------------------
+# Histogram of total daily rentals
+# ---------------------------------------
+p_hist <- ggplot(data, aes(x = cnt)) +
+  geom_histogram(bins = 30, fill = "skyblue", color = "black") +
+  labs(
+    title = "Distribution of Daily Rentals",
+    x = "Number of Rentals",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+
+ggplotly(p_hist)
+```
+## Insight 
+The distribution shows that most days cluster around 4000-5000 rentals, which forms the peak. This shows that there is a stable daily demand with some days having very high or very low number of bike rentals.
+
+## Boxplot
+
+```{r}
+# ---------------------------------------
+# Boxplot of rentals by season
+# ---------------------------------------
+p_box <- ggplot(data, aes(x = season, y = cnt, fill = season)) +
+  geom_boxplot() +
+  labs(
+    title = "Rentals by Season",
+    x = "Season",
+    y = "Number of Rentals"
+  ) +
+  theme_minimal() +
+  guides(fill = "none")
+
+ggplotly(p_box)
+```
+## Insight 
+Demand highly depends on the season. Spring and   Summer show the highest median rentals with less variability. Whereas, Winter and Fall have much lower medians. Winter shows more variability with some outliers.
+
+## Density Plot
+
+```{r}
+# ---------------------------------------
+# Reshape casual and registered user data
+# for density comparison
+# ---------------------------------------
+density_data <- data %>%
+  select(casual, registered) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "user_type",
+    values_to = "count"
+  )
+
+# ---------------------------------------
+# Density plot comparing casual vs registered users
+# ---------------------------------------
+p_density <- ggplot(density_data, aes(x = count, fill = user_type)) +
+  geom_density(alpha = 0.5) +
+  labs(
+    title = "Casual vs Registered Users",
+    x = "Number of Rentals",
+    y = "Density"
+  ) +
+  theme_minimal()
+
+ggplotly(p_density)
+```
+## Insight
+The casual user curve peaks at lower rental counts, showing that casual customers only make a small number of rentals. The registered user curve peaks towards the right, indicating towards higher rental volumes.
+
+
+```{r, include=FALSE}
+#I, Fatemeh Sayah Taheri, Mahashree Jatinbhai Ajmeri , declare that the attached assignment is my own work in accordance with the Seneca Academic Policy.  I have not copied any part of this assignment, manually or electronically, from any other source including web sites, unless specified as references. I have not distributed my work to other students.
+```
+
