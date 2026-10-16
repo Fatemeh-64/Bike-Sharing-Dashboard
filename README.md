@@ -6,9 +6,23 @@ An interactive dashboard for exploring bike rental demand, seasonal patterns, we
 
 ## Dashboard Preview
 
-> 📸 **Screenshot coming soon.** Upload your actual dashboard screenshot to `images/dashboard.png`, then replace this note with:
->
-> `![Bike Sharing Dashboard](images/dashboard.png)`
+### Key Metrics
+
+![Bike Sharing Dashboard — Key Metrics](bike_dashboard_images/key_metrics.png)
+
+Overview of total rentals, average daily demand, and maximum rentals, with season-based filtering.
+
+### Interactive Visualizations
+
+![Bike Sharing Dashboard — Interactive Visualizations](bike_dashboard_images/interactive_visualizations.png)
+
+Daily rental time series, average rentals by season, and monthly demand patterns.
+
+### Storyboard and Distribution Analysis
+
+![Bike Sharing Dashboard — Storyboard](bike_dashboard_images/storyboard.png)
+
+Distribution of daily rentals, seasonal variation, and casual versus registered rider comparisons.
 
 ## Project Overview
 
