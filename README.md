@@ -1,30 +1,70 @@
-# Bike Sharing Dashboard
+# Bike Sharing Dashboard 🚲
 
-Interactive dashboard created in **R** using **Flexdashboard** and **Shiny** to explore daily bike rental demand.
+**Interactive Data Analytics Dashboard | R · Shiny · Flexdashboard**
 
-## Overview
-Uses the [UCI Bike Sharing Dataset](https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset), specifically `day.csv` (731 daily observations). Explores rentals by season, month, date, weather, and casual versus registered users.
+An interactive dashboard for exploring bike rental demand, seasonal patterns, weather conditions, and differences between casual and registered riders.
 
-## Tools
-R, Shiny, Flexdashboard, ggplot2, Plotly, DT, dygraphs, tidyverse, lubridate, scales, xts, and tidyr.
+## Dashboard Preview
 
-## Features
-- Searchable, filterable data table
-- Season selector with summary gauges and value boxes
-- Interactive daily time-series, seasonal bar chart, and monthly trends
-- Storyboard charts: histogram, boxplot, and density comparison
+> 📸 **Screenshot coming soon.** Upload your actual dashboard screenshot to `images/dashboard.png`, then replace this note with:
+>
+> `![Bike Sharing Dashboard](images/dashboard.png)`
 
-## How to run
-1. Install R and RStudio.
-2. Download the UCI Bike Sharing Dataset and put `day.csv` beside `bikesharing_dashboard.Rmd`.
-3. Install dependencies:
+## Project Overview
+
+This project uses the [UCI Bike Sharing Dataset](https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset) (`day.csv`, 731 daily records) to explore how rental activity changes over time and across seasons and weather conditions.
+
+**Questions explored**
+- How does bike rental demand change across seasons and months?
+- How do casual and registered riders differ?
+- What trends appear in daily rental activity?
+- How can interactive visualizations help users explore demand?
+
+## Tools & Technologies
+
+- **R / RStudio** — data analysis and dashboard development
+- **Shiny & Flexdashboard** — interactive dashboard layout and controls
+- **ggplot2 & Plotly** — static and interactive visualizations
+- **dygraphs & xts** — time-series exploration
+- **DT** — searchable and filterable data tables
+- **tidyverse, lubridate, scales, tidyr** — data preparation and presentation
+
+## Dashboard Features
+
+| Feature | Description |
+| --- | --- |
+| Seasonal analysis | Compare rentals across seasons |
+| Time-series charts | Explore daily rental trends |
+| Rider comparisons | Examine casual vs. registered riders |
+| Interactive controls | Select seasons and explore charts |
+| Summary metrics | View value boxes and gauges |
+| Data table | Search and filter underlying records |
+| Distribution plots | Explore histograms, boxplots, and density charts |
+
+## Run the Project
+
+1. Install **R** and **RStudio**.
+2. Download `day.csv` from the [UCI dataset](https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset).
+3. Place `day.csv` in the same folder as `bikesharing_dashboard.Rmd`.
+4. Install the required packages:
+
 ```r
-install.packages(c("shiny", "flexdashboard", "tidyverse", "plotly", "DT", "lubridate", "scales", "dygraphs", "xts", "ggplot2", "tidyr"))
+install.packages(c(
+  "shiny", "flexdashboard", "tidyverse", "plotly",
+  "DT", "lubridate", "scales", "dygraphs",
+  "xts", "ggplot2", "tidyr"
+))
 ```
-4. Open `bikesharing_dashboard.Rmd` in RStudio and choose **Run Document**.
 
-## Data source
-UCI Machine Learning Repository: [Bike Sharing Dataset](https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset), Fanaee-T and Gama (2013).
+5. Open `bikesharing_dashboard.Rmd` in RStudio and select **Run Document**.
 
-## Status
-Academic project. Dataset and screenshots are not yet included; add them to complete the reproducible portfolio.
+## Dataset & Attribution
+
+**Source:** [UCI Machine Learning Repository — Bike Sharing Dataset](https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset). Fanaee-T and Gama (2013).
+
+## Project Context
+
+Academic data visualization project showcasing exploratory data analysis, interactive reporting, and dashboard design.
+
+---
+*Portfolio project | Data Analytics & Visualization*
